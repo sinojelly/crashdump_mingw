@@ -12,6 +12,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string>
+#include <sstream>
+#include <iomanip>
+#include <iostream>
 
 namespace {
 
@@ -82,7 +85,7 @@ enum BasicType
 
 typedef struct _StackTrace {
 //	wchar_t message[2 * 1024 * 1024];
-	std::string message;
+	std::ostringstream* message;
 	int written;
 	HANDLE process;
 	HANDLE thread;
@@ -100,6 +103,8 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 		return false;
 	}
 
+	std::ostringstream& oss = *stackTrace->message;
+	
 	switch (basicType)
 	{
 	case btChar:
@@ -108,10 +113,7 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 		{
 			char value;
 			ReadProcessMemory(stackTrace->process, valueLocation, &value, sizeof(value), NULL);
-
-			stackTrace->written +=
-				swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"'%c'", value);
+			oss << "'" << value << "'";
 		}
 		else
 		{
@@ -125,9 +127,7 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 
 			PVOID pageEndAddress = (char*)pageInfo.BaseAddress + pageInfo.RegionSize;
 
-			stackTrace->written +=
-				swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"\"");
+			oss << "\"";
 
 			for (int charsWritten = 0; charsWritten < 100; )
 			{
@@ -140,16 +140,12 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 					{
 						if (charsWritten == 100 - 1)
 						{
-							stackTrace->written +=
-								swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-									L"...");
+							oss << "...";
 							break;
 						}
 						else
 						{
-							stackTrace->written +=
-								swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-									L"%c", next);
+							oss << next;
 							charsWritten++;
 							value++;
 						}
@@ -163,9 +159,7 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 				{
 					if (VirtualQueryEx(stackTrace->process, pageEndAddress, &pageInfo, sizeof(pageInfo)) == 0)
 					{
-						stackTrace->written +=
-							swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-								L"<Bad memory>");
+						oss << "<Bad memory>";
 						break;
 					}
 
@@ -173,9 +167,7 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 				}
 			}
 
-			stackTrace->written +=
-				swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"\"");
+			oss << "\"";
 		}
 
 		break;
@@ -188,9 +180,7 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 			wchar_t value;
 			ReadProcessMemory(stackTrace->process, valueLocation, &value, sizeof(value), NULL);
 
-			stackTrace->written +=
-				swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"'%lc'", value);
+			oss << "'" << value << "'";
 		}
 		else
 		{
@@ -204,9 +194,7 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 
 			PVOID pageEndAddress = (char*)pageInfo.BaseAddress + pageInfo.RegionSize;
 
-			stackTrace->written +=
-				swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"L\"");
+			oss << "L\"";
 
 			for (int charsWritten = 0; charsWritten < 100; )
 			{
@@ -219,16 +207,12 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 					{
 						if (charsWritten == 100 - 1)
 						{
-							stackTrace->written +=
-								swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-									L"...");
+							oss << "...";
 							break;
 						}
 						else
 						{
-							stackTrace->written +=
-								swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-									L"%lc", next);
+							oss << next;
 							charsWritten++;
 							value++;
 						}
@@ -242,19 +226,14 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 				{
 					if (VirtualQueryEx(stackTrace->process, pageEndAddress, &pageInfo, sizeof(pageInfo)) == 0)
 					{
-						stackTrace->written +=
-							swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-								L"<Bad memory>");
+						oss << "<Bad memory>";
 						break;
 					}
 
 					pageEndAddress = (char*)pageInfo.BaseAddress + pageInfo.RegionSize;
 				}
 			}
-
-			stackTrace->written +=
-				swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"\"");
+			oss << "\"";
 		}
 
 		break;
@@ -274,10 +253,7 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 		{
 			int8_t value;
 			ReadProcessMemory(stackTrace->process, valueLocation, &value, sizeof(value), NULL);
-
-			stackTrace->written +=
-				swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"%" WIDEN(PRId8), value);
+			oss << value;
 			break;
 		}
 
@@ -285,10 +261,7 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 		{
 			int16_t value;
 			ReadProcessMemory(stackTrace->process, valueLocation, &value, sizeof(value), NULL);
-
-			stackTrace->written +=
-				swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"%" WIDEN(PRId16), value);
+			oss << value;
 			break;
 		}
 
@@ -296,10 +269,7 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 		{
 			int32_t value;
 			ReadProcessMemory(stackTrace->process, valueLocation, &value, sizeof(value), NULL);
-
-			stackTrace->written +=
-				swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"%" WIDEN(PRId32), value);
+			oss << value;
 			break;
 		}
 
@@ -307,10 +277,7 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 		{
 			int64_t value;
 			ReadProcessMemory(stackTrace->process, valueLocation, &value, sizeof(value), NULL);
-
-			stackTrace->written +=
-				swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"%" WIDEN(PRId64), value);
+			oss << value;
 			break;
 		}
 
@@ -338,10 +305,7 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 		{
 			uint8_t value;
 			ReadProcessMemory(stackTrace->process, valueLocation, &value, sizeof(value), NULL);
-
-			stackTrace->written +=
-				swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"%" WIDEN(PRIu8), value);
+			oss << value;
 			break;
 		}
 
@@ -349,10 +313,7 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 		{
 			uint16_t value;
 			ReadProcessMemory(stackTrace->process, valueLocation, &value, sizeof(value), NULL);
-
-			stackTrace->written +=
-				swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"%" WIDEN(PRIu16), value);
+			oss << value;
 			break;
 		}
 
@@ -360,10 +321,7 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 		{
 			uint32_t value;
 			ReadProcessMemory(stackTrace->process, valueLocation, &value, sizeof(value), NULL);
-
-			stackTrace->written +=
-				swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"%" WIDEN(PRIu32), value);
+			oss << value;
 			break;
 		}
 
@@ -371,10 +329,7 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 		{
 			uint64_t value;
 			ReadProcessMemory(stackTrace->process, valueLocation, &value, sizeof(value), NULL);
-
-			stackTrace->written +=
-				swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"%" WIDEN(PRIu64), value);
+			oss << value;
 			break;
 		}
 
@@ -392,10 +347,7 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 	{
 		float value;
 		ReadProcessMemory(stackTrace->process, valueLocation, &value, sizeof(value), NULL);
-
-		stackTrace->written +=
-			swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-				L"%f", value);
+		oss << value;
 		break;
 	}
 
@@ -403,10 +355,7 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 	{
 		long value;
 		ReadProcessMemory(stackTrace->process, valueLocation, &value, sizeof(value), NULL);
-
-		stackTrace->written +=
-			swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-				L"%ld", value);
+		oss << value;
 		break;
 	}
 
@@ -414,10 +363,7 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 	{
 		unsigned long value;
 		ReadProcessMemory(stackTrace->process, valueLocation, &value, sizeof(value), NULL);
-
-		stackTrace->written +=
-			swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-				L"%lu", value);
+		oss << value;
 		break;
 	}
 
@@ -433,6 +379,7 @@ bool printBasicType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, ULONG typeIn
 
 bool printGivenType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, enum SymTagEnum symbolTag, ULONG typeIndex, void* valueLocation, bool whilePrintingPointer)
 {
+	std::ostringstream& oss = *stackTrace->message;
 	switch (symbolTag)
 	{
 	case SymTagBaseType:
@@ -449,16 +396,11 @@ bool printGivenType(StackTrace* stackTrace, PSYMBOL_INFOW pSymInfo, enum SymTagE
 	{
 		void* pointedValueLocation;
 		ReadProcessMemory(stackTrace->process, valueLocation, &pointedValueLocation, sizeof(pointedValueLocation), NULL);
-
-		stackTrace->written +=
-			swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-				L"0x%p -> ", pointedValueLocation);
+		oss << "0x" << std::hex << pointedValueLocation << std::dec << " -> ";
 
 		if (pointedValueLocation < (void*)0x1000)
 		{
-			stackTrace->written +=
-				swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"?");
+			oss << "?";
 			break;
 		}
 
@@ -537,6 +479,7 @@ BOOL CALLBACK enumParams(
 	}
 
 	StackTrace* stackTrace = (StackTrace*)UserContext;
+	std::ostringstream& oss = *stackTrace->message;
 
 	if (stackTrace->isFirstParameter)
 	{
@@ -544,23 +487,17 @@ BOOL CALLBACK enumParams(
 	}
 	else
 	{
-		stackTrace->written +=
-			swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-				L", ");
+		oss << ", ";
 	}
 
-	stackTrace->written +=
-		swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-			L"%ls = ", pSymInfo->Name);
+	oss << pSymInfo->Name << " = "; // %ls
 
 	void* valueLocation = NULL;
 	if (pSymInfo->Flags & SYMFLAG_REGISTER)
 	{
 		if (stackTrace->scratchSpace == NULL)
 		{
-			stackTrace->written +=
-				swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"<Could not allocate memory to write register value>");
+			oss << "<Could not allocate memory to write register value>";
 			return TRUE;
 		}
 
@@ -624,9 +561,7 @@ BOOL CALLBACK enumParams(
 #endif
 
 		default:
-			stackTrace->written +=
-				swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"<Unknown register %lu>", pSymInfo->Register);
+			oss << "<Unknown register " << pSymInfo->Register << ">";
 			return TRUE;
 		}
 	}
@@ -648,9 +583,7 @@ BOOL CALLBACK enumParams(
 #endif
 
 		default:
-			stackTrace->written +=
-				swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"<Relative to unknown register %lu>", pSymInfo->Register);
+			oss << "<Relative to unknown register " << pSymInfo->Register << ">";
 			return TRUE;
 		}
 	}
@@ -661,9 +594,7 @@ BOOL CALLBACK enumParams(
 
 	if (!printType(stackTrace, pSymInfo, valueLocation))
 	{
-		stackTrace->written +=
-			swprintf_s(stackTrace->message + stackTrace->written, sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-				L"?");
+		oss << "?";
 	}
 
 	return TRUE;
@@ -675,6 +606,7 @@ void printStack(StackTrace* stackTrace)
 	{
 		return;
 	}
+	std::ostringstream& oss = *stackTrace->message;
 
 	SYMBOL_INFOW* symbol = reinterpret_cast<SYMBOL_INFOW*>(calloc(sizeof(*symbol) + 256 * sizeof(wchar_t), 1));
 	symbol->MaxNameLen = 255;
@@ -695,9 +627,7 @@ void printStack(StackTrace* stackTrace)
 
 		if (SymFromAddrW(stackTrace->process, stackTrace->currentStackFrame.AddrPC.Offset, NULL, symbol))
 		{
-			stackTrace->written +=
-				swprintf_s(&stackTrace->message[stackTrace->written], sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written - 1,
-					L">%02i: 0x%08llX %ls (", i, symbol->Address, symbol->Name);
+			oss << ">" << std::setw(2) << std::setfill('0') << i << ": 0x" << std::setw(8) << std::hex << symbol->Address << std::dec << symbol->Name << " (";
 
 			IMAGEHLP_STACK_FRAME stackFrame = { 0 };
 			stackFrame.InstructionOffset = symbol->Address;
@@ -707,29 +637,21 @@ void printStack(StackTrace* stackTrace)
 				SymEnumSymbolsW(stackTrace->process, 0, NULL, enumParams, stackTrace);
 			}
 
-			stackTrace->written +=
-				swprintf_s(&stackTrace->message[stackTrace->written], sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L")");
+			oss << ")";
 
 			DWORD pos;
 			IMAGEHLP_LINEW64 lineInfo = { 0 };
 			lineInfo.SizeOfStruct = sizeof(lineInfo);
 			if (SymGetLineFromAddrW64(stackTrace->process, stackTrace->currentStackFrame.AddrPC.Offset, &pos, &lineInfo))
 			{
-				stackTrace->written +=
-					swprintf_s(&stackTrace->message[stackTrace->written], sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-						L" at %ls:%lu", lineInfo.FileName, lineInfo.LineNumber);
+				oss << " at " << lineInfo.FileName << ":" << lineInfo.LineNumber;
 			}
 
-			stackTrace->written +=
-				swprintf_s(&stackTrace->message[stackTrace->written], sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L"\n");
+			oss << "\n";
 		}
 		else
 		{
-			stackTrace->written +=
-				swprintf_s(&stackTrace->message[stackTrace->written], sizeof(stackTrace->message) / sizeof(stackTrace->message[0]) - stackTrace->written,
-					L">%02i: 0x%08llX ?\n", i, stackTrace->currentStackFrame.AddrPC.Offset);
+			oss << ">" << std::setw(2) << std::setfill('0') << i << ": 0x" << std::setw(8) << std::hex << stackTrace->currentStackFrame.AddrPC.Offset << std::dec << " ?\n";
 		}
 	}
 
@@ -740,12 +662,13 @@ void printStack(StackTrace* stackTrace)
 
 } // namespace (anonymous)
 
-bool CrashDumper::Dump(DWORD processId, DWORD threadId, LPEXCEPTION_POINTERS exception)
+bool CrashDumper::Dump(DWORD processId, DWORD threadId, LPEXCEPTION_POINTERS exception, std::ostringstream* pStackTraceStream)
 {
 	EXCEPTION_POINTERS remoteException = { 0 };
 	CONTEXT remoteContextRecord = { 0 };
 
 	StackTrace* stackTrace = reinterpret_cast<StackTrace*>(calloc(sizeof(*stackTrace), 1));
+	stackTrace->message = pStackTraceStream;
 	stackTrace->process = OpenProcess(PROCESS_ALL_ACCESS, FALSE, processId);
 	stackTrace->thread = OpenThread(THREAD_ALL_ACCESS, FALSE, threadId);
 	SuspendThread(stackTrace->thread);
@@ -778,8 +701,9 @@ bool CrashDumper::Dump(DWORD processId, DWORD threadId, LPEXCEPTION_POINTERS exc
 	GetTempPathW(sizeof(tempPath) / sizeof(tempPath[0]), tempPath);
 
 	printStack(stackTrace);
-	BOOL wroteStackTrace = stackTrace->written > 0;
 
+	BOOL wroteStackTrace = !stackTrace->message->str().empty();
+#if 0
 	wchar_t stackTraceFilename[MAX_PATH + 1];
 	if (wroteStackTrace)
 	{
@@ -806,6 +730,7 @@ bool CrashDumper::Dump(DWORD processId, DWORD threadId, LPEXCEPTION_POINTERS exc
 				message, sizeof(message) / sizeof(message[0]),
 				L"Writing the stack trace failed because of error 0x%08X\n\n",
 				GetLastError());
+#endif
 #if 0
 	wchar_t dumpFilename[MAX_PATH + 1];
 	bool wroteMiniDump = false;
@@ -844,7 +769,7 @@ bool CrashDumper::Dump(DWORD processId, DWORD threadId, LPEXCEPTION_POINTERS exc
 			swprintf_s(message + written, sizeof(message) / sizeof(message[0]) - written, L"Minidump written to %ls", dumpFilename) :
 			swprintf_s(message + written, sizeof(message) / sizeof(message[0]) - written, L"Minidump could not be taken because of error 0x%08X", GetLastError());
 #endif
-	MessageBoxW(NULL, message, L"Crash", MB_OK);
+//	MessageBoxW(NULL, message, L"Crash", MB_OK);
 
 	ResumeThread(stackTrace->thread);
 	CloseHandle(stackTrace->thread);

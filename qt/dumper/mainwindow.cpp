@@ -12,3 +12,8 @@ MainWindow::~MainWindow()
 {
 	delete ui;
 }
+
+void MainWindow::SetDumpStr(QString s)
+{
+	ui->textDump->setPlainText(s);
+}

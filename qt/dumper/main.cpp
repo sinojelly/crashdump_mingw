@@ -4,6 +4,7 @@
 #include "crash_dumper.h"
 #include <Windows.h>
 #include <DbgHelp.h>
+#include <sstream>
 
 int main(int argc, char *argv[])
 {
@@ -29,7 +30,10 @@ int main(int argc, char *argv[])
 	sscanf_s(exceptionPointersString, "%p", &exception);
 
 	CrashDumper dumper;
-	bool ok = dumper.Dump(processId, threadId, exception);
+	std::ostringstream oss;
+	bool ok = dumper.Dump(processId, threadId, exception, &oss);
+	
+	w.SetDumpStr(QString::fromUtf8(oss.str().c_str()));
 	
 	return a.exec();
 }
