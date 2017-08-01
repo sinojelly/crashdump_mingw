@@ -25,15 +25,16 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
+INCLUDEPATH += ../../common
 
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-    crash_dumper.cpp
+        ../../common/crash_handler_dump.cpp
 
 HEADERS += \
         mainwindow.h \
-    crash_dumper.h
+        ../../common/crash_handler_dump.h
 
 FORMS += \
         mainwindow.ui

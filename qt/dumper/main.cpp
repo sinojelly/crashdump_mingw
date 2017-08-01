@@ -1,7 +1,7 @@
 #include "mainwindow.h"
 #include <QApplication>
 
-#include "crash_dumper.h"
+#include "crash_handler_dump.h"
 #include <Windows.h>
 #include <DbgHelp.h>
 #include <sstream>
@@ -29,9 +29,8 @@ int main(int argc, char *argv[])
 	sscanf_s(threadIdString, "%lu", &threadId);
 	sscanf_s(exceptionPointersString, "%p", &exception);
 
-	CrashDumper dumper;
 	std::ostringstream oss;
-	bool ok = dumper.Dump(processId, threadId, exception, &oss);
+	bool ok = crash_handler_dump(processId, threadId, exception, &oss);
 	
 	w.SetDumpStr(QString::fromUtf8(oss.str().c_str()));
 	

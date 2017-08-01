@@ -1,4 +1,4 @@
-#include "crash_dumper.h"
+#include "crash_handler_dump.h"
 
 #define _NO_CVCONST_H
 #define _CRT_STDIO_ISO_WIDE_SPECIFIERS
@@ -662,7 +662,7 @@ void printStack(StackTrace* stackTrace)
 
 } // namespace (anonymous)
 
-bool CrashDumper::Dump(DWORD processId, DWORD threadId, LPEXCEPTION_POINTERS exception, std::ostringstream* pStackTraceStream)
+bool crash_handler_dump(DWORD processId, DWORD threadId, LPEXCEPTION_POINTERS exception, std::ostringstream* pStackTraceStream)
 {
 	EXCEPTION_POINTERS remoteException = { 0 };
 	CONTEXT remoteContextRecord = { 0 };
@@ -778,9 +778,3 @@ bool CrashDumper::Dump(DWORD processId, DWORD threadId, LPEXCEPTION_POINTERS exc
 	return true;
 }
 
-
-
-CrashDumper::CrashDumper()
-{
-	
-}
