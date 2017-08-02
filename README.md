@@ -12,6 +12,7 @@ This repository is only a bit modified with example projects for MinGW and qt.
 * The call stack contains only raw addresses, not symbol names,
   but if you have the original unstripped exe file with debug symbols included,
   you can easily use gdb to map addresses to source code lines.
+* Saving minidumps is commented out
 * There is a lot of code for parsing variables and data which doesn't seem to work with GCC/MinGW debug symbols
 
 ## License
