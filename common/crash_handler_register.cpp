@@ -2,38 +2,34 @@
 
 #include <Windows.h>
 #include <stdio.h>
+#include <iostream>
+#include <sstream>
 
 namespace {
 
-wchar_t CrashDumper_dumperProcessRelativePath[32768];
+std::wstring CrashDumper_dumperProcessRelativePath;
 
 LONG WINAPI exceptionHandler(LPEXCEPTION_POINTERS exception)
 {
 	wchar_t currentProcessPath[MAX_PATH + 1];
-	wchar_t dumperProcessPath[MAX_PATH + 1];
 
 	DWORD written = GetModuleFileNameW(NULL, currentProcessPath, sizeof(currentProcessPath) / sizeof(currentProcessPath[0]));
-	for (DWORD i = written - 1; i >= 0; i--)
-	{
-		if (currentProcessPath[i] == L'\\')
-		{
-			memcpy_s(dumperProcessPath, sizeof(dumperProcessPath), currentProcessPath, i * sizeof(i));
-			//wchar_t dumperProcessRelativePath[] = L"\\dumper.exe";
-			memcpy_s(dumperProcessPath + i, sizeof(dumperProcessPath) - i * sizeof(i), CrashDumper_dumperProcessRelativePath, sizeof(CrashDumper_dumperProcessRelativePath));
-			break;
-		}
-	}
+	std::wstring currentProcessPath_ws(currentProcessPath);
+	std::wstring dumperProcessPath_ws(currentProcessPath_ws, 0, currentProcessPath_ws.find_last_of(L'\\'));
+	dumperProcessPath_ws += CrashDumper_dumperProcessRelativePath;
 
-	wchar_t applicationName[MAX_PATH + 3];
 	wchar_t commandLine[32768];
-	swprintf_s(applicationName, sizeof(applicationName) / sizeof(applicationName[0]), L"\"%ls\"", dumperProcessPath);
-	swprintf_s(commandLine, sizeof(commandLine) / sizeof(commandLine[0]), L"\"%ls\" %lu %lu %p", dumperProcessPath, GetCurrentProcessId(), GetCurrentThreadId(), exception);
+	
+	swprintf_s(commandLine, sizeof(commandLine) / sizeof(commandLine[0]), L"\"%ls\" %lu %lu %p", dumperProcessPath_ws.c_str(), GetCurrentProcessId(), GetCurrentThreadId(), exception);
 
 	STARTUPINFOW startupInfo = { 0 };
 	startupInfo.cb = sizeof(STARTUPINFOW);
 	PROCESS_INFORMATION dumperProcessInfo;
-	if (CreateProcessW(dumperProcessPath, commandLine, NULL, NULL, FALSE, NORMAL_PRIORITY_CLASS, NULL, NULL, &startupInfo, &dumperProcessInfo) == 0)
+	fprintf(stderr, "commandLine: %ls\n", commandLine);
+
+	if (CreateProcessW(dumperProcessPath_ws.c_str(), commandLine, NULL, NULL, FALSE, NORMAL_PRIORITY_CLASS, NULL, NULL, &startupInfo, &dumperProcessInfo) == 0)
 	{
+		std::cerr << "ERROR: Unable to run the dumper process" << std::endl;
 		return FALSE;
 	}
 
@@ -49,8 +45,10 @@ LONG WINAPI exceptionHandler(LPEXCEPTION_POINTERS exception)
 
 }
 
-void crash_handler_register(wchar_t dumperProcessRelativePath[])
+//void crash_handler_register(wchar_t dumperProcessRelativePath[])
+void crash_handler_register(std::wstring dumperProcessRelativePath)
 {
-	memcpy_s(CrashDumper_dumperProcessRelativePath, sizeof(CrashDumper_dumperProcessRelativePath), dumperProcessRelativePath, sizeof(dumperProcessRelativePath));
+	CrashDumper_dumperProcessRelativePath = dumperProcessRelativePath;
+	
 	SetUnhandledExceptionFilter(exceptionHandler);
 }

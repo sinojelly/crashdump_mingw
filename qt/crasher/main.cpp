@@ -9,7 +9,7 @@ void crashme()
 
 int main(int argc, char *argv[])
 {
-	crash_handler_register(L"\\dumper.exe");
+	crash_handler_register(L"\\..\\..\\dumper\\release\\dumper.exe");
 	
 	crashme();
 	
