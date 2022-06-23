@@ -8,6 +8,20 @@ void crashme()
 	*((int*)1) = 5;
 }
 
+/*
+ *  Usage: run crasher.exe, it calls dumper.exe to dump stack trace.
+ *
+ *  D:\code\crashdump_mingw\cpp_plain\cmake-build-debug>crasher.exe
+    commandLine: "D:\code\crashdump_mingw\cpp_plain\cmake-build-debug\dumper.exe" 38652 3172 000000000063EE80
+    Stack Trace:
+    >00: 0x00401555 ?
+    >01: 0x004015c6 ?
+    >02: 0x004013c7 ?
+    >03: 0x004014fb ?
+    >04: 0x7ffad8ea70200xfc5cb4 ()
+    >05: 0x7ffadae826300xfc5cb4 ()
+ * */
+
 int main(int argc, char *argv[])
 {
 	crash_handler_register(std::wstring(L"\\dumper.exe"));
