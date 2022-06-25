@@ -10,6 +10,11 @@ void crashme()
 
 /*
  *  Usage: run crasher.exe, it calls dumper.exe to dump stack trace.
+ * 
+ *  Use cv2pdb crasher.exe to generate crasher.pdb, then can output function name.
+ *  And If you found "Can not load PDB DLL" while running cv2pdb command, 
+ *  You can install Visual Studio and run the command in Developer Command Prompt.
+ *  Download cv2pdb here: https://github.com/rainers/cv2pdb
  *
  *  D:\code\crashdump_mingw\cpp_plain\cmake-build-debug>crasher.exe
     commandLine: "D:\code\crashdump_mingw\cpp_plain\cmake-build-debug\dumper.exe" 38652 3172 000000000063EE80
