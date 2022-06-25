@@ -608,7 +608,8 @@ void printStack(StackTrace* stackTrace)
 	}
 	std::ostringstream& oss = *stackTrace->message;
 
-	SYMBOL_INFOW* symbol = reinterpret_cast<SYMBOL_INFOW*>(calloc(sizeof(*symbol) + 256 * sizeof(wchar_t), 1));
+	//SYMBOL_INFOW* symbol = reinterpret_cast<SYMBOL_INFOW*>(calloc(sizeof(*symbol) + 256 * sizeof(wchar_t), 1));
+	SYMBOL_INFO* symbol = reinterpret_cast<SYMBOL_INFO*>(calloc(sizeof(*symbol) + 256 * sizeof(wchar_t), 1));
 	symbol->MaxNameLen = 255;
 	symbol->SizeOfStruct = sizeof(SYMBOL_INFOW);
 
@@ -625,7 +626,7 @@ void printStack(StackTrace* stackTrace)
 			break;
 		}
 
-		if (SymFromAddrW(stackTrace->process, stackTrace->currentStackFrame.AddrPC.Offset, NULL, symbol))
+		if (SymFromAddr(stackTrace->process, stackTrace->currentStackFrame.AddrPC.Offset, NULL, symbol))
 		{
 			oss << ">" << std::setw(2) << std::setfill('0') << i << ": 0x" << std::setw(8) << std::hex << symbol->Address << std::dec << symbol->Name << " (";
 
